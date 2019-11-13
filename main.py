@@ -15,7 +15,7 @@ def main():
     screen.fill((26, 50, 88))
 
     FALL_EVENT, FALL_TIME = pygame.USEREVENT+1, 700
-    HOLD_EVENT, HOLD_TIME = pygame.USEREVENT+2, 200
+    HOLD_EVENT, HOLD_TIME = pygame.USEREVENT+2, 70
     pygame.time.set_timer(FALL_EVENT, FALL_TIME)
     pygame.time.set_timer(HOLD_EVENT, HOLD_TIME)
 
@@ -25,7 +25,7 @@ def main():
     FPS = 60
     running = True
 
-    last_key = None
+    hold = {pygame.K_DOWN: 0, pygame.K_LEFT: 0, pygame.K_RIGHT: 0}
 
     while running:
         clock.tick(FPS)
@@ -34,25 +34,35 @@ def main():
             if event.type == pygame.QUIT:
                 quit()
 
-            if event.type == pygame.KEYDOWN or event.type == HOLD_EVENT:
-                if event.type == pygame.KEYDOWN:
-                    last_key = event.key
-                elif last_key is None:
-                    pass
-                    
-                if last_key == pygame.K_DOWN:
+            if event.type == HOLD_EVENT:
+                for k, v in hold.items():
+                    if v>0:
+                        if hold[k] >= 7:
+                            if k == pygame.K_DOWN:
+                                player.fall()
+                            elif k == pygame.K_RIGHT:
+                                player.move(1)
+                            elif k == pygame.K_LEFT:
+                                player.move(-1)
+                        hold[k] += 1
+
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_DOWN:
                     player.fall()
-                elif last_key == pygame.K_RIGHT:
+                elif event.key == pygame.K_RIGHT:
                     player.move(1)
-                elif last_key == pygame.K_LEFT:
+                elif event.key == pygame.K_LEFT:
                     player.move(-1)
+                if event.key in hold.keys():
+                    hold[event.key] += 1
             
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
                     player.turn()
 
             if event.type == pygame.KEYUP:
-                last_key = None
+                if event.key in hold.keys():
+                    hold[event.key] = 0
             
             if event.type == FALL_EVENT:
                 player.fall()
