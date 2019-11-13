@@ -1,6 +1,7 @@
 
 import pygame
 
+
 import random
 from random import randint
 import time
@@ -13,51 +14,19 @@ FALLING = 1
 DROPPED = 2
 GAME_OVER = 3
 
-ROW_BUFFER = 22
+ROW_BUFFER = 23
 ROW = 20
 COL = 10
 EMPTY_ROW = [0 for i in range(10)]
 
 COLOR = [None, (251, 86, 90), (114, 55, 197), (45, 133, 222), (28, 196, 171), (241, 220, 27)]
 
-FLIP = [1, 0, 0, 0, 1, 1, 1]
-TYPE = [[[0, 0, 0, 0],
-         [0, 0, 0, 0],
-         [1, 1, 1, 1],
-         [0, 0, 0, 0]],
-
-        [[0, 1, 0],
-         [1, 1, 1],
-         [0, 0, 0]],
-         
-        [[1, 1, 0],
-         [0, 1, 0],
-         [0, 1, 0]],
-         
-        [[0, 1, 0],
-         [0, 1, 0],
-         [1, 1, 0]],
-         
-        [[1, 0, 0],
-         [1, 1, 0],
-         [0, 1, 0]],
-         
-        [[0, 0, 1],
-         [0, 1, 1],
-         [0, 1, 0]],
-
-        [[1, 1],
-         [1, 1]]]
+from block import Block
 
 class Tetris:
     score = 0
     state = NOT_RUNNING
     table = []
-    block = []
-    bx = -1
-    by = -1
-    bsize = 0
-    btype = -1
     def __init__(self, size, pos, title, screen):
         self.width = size[0]
         self.height = size[1]
@@ -72,7 +41,7 @@ class Tetris:
         for i in range(ROW_BUFFER):
             self.table.append(EMPTY_ROW[:])
 
-        self.new_block(randint(0, 6), randint(1, 5))
+        self.new_block()
         self.draw()
     
     def draw(self):
@@ -84,10 +53,11 @@ class Tetris:
                     pygame.draw.rect(self.screen,
                                     COLOR[self.table[i][j]],
                                     pygame.Rect(self.x+self.dcol*j, self.yy-self.drow*i, self.dcol, self.drow))
-                elif self.bx-self.bsize<=i and i<self.bx and self.by<=j and j<self.by+self.bsize:
-                    if self.block[i-(self.bx-self.bsize)][j-self.by] != 0:
+                elif self.block.x<=i and i<self.block.x+self.block.size and \
+                     self.block.y<=j and j<self.block.y+self.block.size:
+                    if self.block.block[i-self.block.x][j-self.block.y] != 0:
                         pygame.draw.rect(self.screen,
-                                    COLOR[self.block[i-(self.bx-self.bsize)][j-self.by]],
+                                    COLOR[self.block.block[i-self.block.x][j-self.block.y]],
                                     pygame.Rect(self.x+self.dcol*j, self.yy-self.drow*i, self.dcol, self.drow))
 
         for i in range(1, ROW):
@@ -100,35 +70,73 @@ class Tetris:
 
         pygame.display.flip()
 
-    def new_block(self, typ, color_id):
-        self.bsize = len(TYPE[typ])
-        self.btype = typ
-        self.bx = ROW
-        self.by = randint(0, COL-1-self.bsize)
-        self.block = deepcopy(TYPE[typ])
-        for i in range(self.bsize):
-            for j in range(self.bsize):
-                if self.block[i][j] == 1:
-                    self.block[i][j] = color_id
-        
-        for i in range(randint(0, 3)):
-            self.turn()
-        
+    def new_block(self):
+        self.block = Block(randint(0, 6), randint(1, len(COLOR)-1), (ROW_BUFFER, COL))
         self.state = FALLING
+        self.draw()
+    
+    def fall(self):
+        pos = self.block.fall()
+        if self.check(self.block.block, pos):
+            self.block.x, self.block.y = pos
+        else:
+            self.hit()
+        self.draw()
+
+    def move(self, dir):
+        pos = self.block.move(dir)
+        if self.check(self.block.block, pos):
+            self.block.x, self.block.y = pos
+            self.draw()
     
     def turn(self):
-        new_block = deepcopy(self.block)
+        block = self.block.turn()
+        if self.check(block, (self.block.x, self.block.y)):
+            self.block.block = block
+            self.draw()
 
-        if FLIP[self.btype]:
-            for i in range(self.bsize):
-                for j in range(self.bsize):
-                    new_block[i][j] = self.block[self.bsize-j-1][self.bsize-i-1]
-        else:
-            for i in range(self.bsize):
-                for j in range(self.bsize):
-                    new_block[i][j] = self.block[j][self.bsize-i-1]
+    def check(self, block, pos):
+        print(pos)
+        x, y = pos
+        size = len(block)
+
+        for i in range(size):
+            for j in range(size):
+                if block[i][j] != 0:
+                    if not (x+i>=0 and y+j>=0 and y+j<COL and self.table[x+i][y+j] == 0):
+                        return False
         
-        self.block = new_block
+        return True
+
+    def hit(self):
+        for i in range(self.block.size):
+            for j in range(self.block.size):
+                if self.block.block[i][j] != 0:
+                    self.table[self.block.x+i][self.block.y+j] = self.block.block[i][j]
+        
+        i = 0
+        while i<ROW:
+            if 0 not in self.table[i]:
+                self.table.pop(i)
+                self.table.append(EMPTY_ROW[:])
+                i -= 1
+            i += 1
+        self.draw()
+
+        for i in range(ROW, ROW_BUFFER):
+            for j in range(COL):
+                if self.table[i][j] != 0:
+                    return GAME_OVER
+
+        state = DROPPED
+        self.new_block()
+
+
+
+
+    
+
+    
 
 
     
