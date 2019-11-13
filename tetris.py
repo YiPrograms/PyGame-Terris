@@ -20,10 +20,10 @@ EMPTY_ROW = [0 for i in range(10)]
 
 COLOR = [None, (251, 86, 90), (114, 55, 197), (45, 133, 222), (28, 196, 171), (241, 220, 27)]
 
-FLIP = [1, 0, 0, 0, 0, 0, 0]
+FLIP = [1, 0, 0, 0, 1, 1, 1]
 TYPE = [[[0, 0, 0, 0],
-         [1, 1, 1, 1],
          [0, 0, 0, 0],
+         [1, 1, 1, 1],
          [0, 0, 0, 0]],
 
         [[0, 1, 0],
@@ -122,7 +122,7 @@ class Tetris:
         if FLIP[self.btype]:
             for i in range(self.bsize):
                 for j in range(self.bsize):
-                    new_block[i][j] = self.block[j][i]
+                    new_block[i][j] = self.block[self.bsize-j-1][self.bsize-i-1]
         else:
             for i in range(self.bsize):
                 for j in range(self.bsize):
