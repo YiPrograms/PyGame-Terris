@@ -7,10 +7,10 @@ random.seed(time.time())
 from copy import deepcopy
 
 FLIP = [1, 0, 0, 0, 1, 1, 1]
-TYPE = [[[0, 0, 0, 0],
-         [0, 0, 0, 0],
-         [1, 1, 1, 1],
-         [0, 0, 0, 0]],
+TYPE = [[[0, 1, 0, 0],
+         [0, 1, 0, 0],
+         [0, 1, 0, 0],
+         [0, 1, 0, 0]],
 
         [[0, 1, 0],
          [1, 1, 1],
@@ -36,12 +36,13 @@ TYPE = [[[0, 0, 0, 0],
          [1, 1]]]
 
 class Block:
-    def __init__(self, typ, color, table_size):
+    def __init__(self, typ, color):
         self.size = len(TYPE[typ])
         self.typ = typ
-        self.x = table_size[0]-self.size
-        self.y = randint(0, table_size[1]-1-self.size)
+        self.x = -1
+        self.y = -1
         self.block = deepcopy(TYPE[typ])
+        self.ori = False
         for i in range(self.size):
             for j in range(self.size):
                 if self.block[i][j] == 1:
@@ -53,11 +54,13 @@ class Block:
     def turn(self):
         new_block = deepcopy(self.block)
 
-        if FLIP[self.typ]:
+        if FLIP[self.typ] and self.ori:
+            self.ori = False
             for i in range(self.size):
                 for j in range(self.size):
-                    new_block[i][j] = self.block[self.size-j-1][self.size-i-1]
+                    new_block[i][j] = self.block[self.size-j-1][i]
         else:
+            self.ori = True
             for i in range(self.size):
                 for j in range(self.size):
                     new_block[i][j] = self.block[j][self.size-i-1]
@@ -69,5 +72,11 @@ class Block:
 
     def move(self, dir):
         return (self.x, self.y+dir)
+    
+    def getpos(self):
+        return self.x, self.y
+    
+    def setpos(self, pos):
+        self.x, self.y = pos
     
 

@@ -24,10 +24,10 @@ COLOR = [None, (251, 86, 90), (114, 55, 197), (45, 133, 222), (28, 196, 171), (2
 from block import Block
 
 class Tetris:
-    score = 0
-    state = NOT_RUNNING
-    table = []
     def __init__(self, size, pos, title, screen):
+        self.table = []
+        self.state = NOT_RUNNING
+        self.score = 0
         self.width = size[0]
         self.height = size[1]
         self.x = pos[0]
@@ -43,6 +43,9 @@ class Tetris:
 
         self.new_block()
         self.draw()
+    
+    def __del__(self):
+        del self
     
     def draw(self):
         pygame.draw.rect(self.screen, (67, 95, 120), pygame.Rect(self.x, self.y, self.width, self.height))
@@ -71,32 +74,58 @@ class Tetris:
         pygame.display.flip()
 
     def new_block(self):
-        self.block = Block(randint(0, 6), randint(1, len(COLOR)-1), (ROW_BUFFER, COL))
+        self.block = Block(randint(0, 6), randint(1, len(COLOR)-1))
+        self.block.setpos((ROW_BUFFER-self.block.size, randint(0, COL-1-self.block.size)))
         self.state = FALLING
         self.draw()
     
     def fall(self):
         pos = self.block.fall()
         if self.check(self.block.block, pos):
-            self.block.x, self.block.y = pos
+            self.block.setpos(pos)
+            self.draw()
         else:
             self.hit()
-        self.draw()
+        
+    
+    def drop(self):
+        x, y = self.block.getpos()
+        if not self.check(self.block.block, (x, y)):
+            pass
+
+        while self.check(self.block.block, (x-1, y)):
+            x -= 1
+
+        self.block.setpos((x, y))
+        self.hit()
 
     def move(self, dir):
         pos = self.block.move(dir)
         if self.check(self.block.block, pos):
-            self.block.x, self.block.y = pos
+            self.block.setpos(pos)
             self.draw()
     
     def turn(self):
         block = self.block.turn()
-        if self.check(block, (self.block.x, self.block.y)):
+        x, y = self.block.getpos()
+        success = False
+        if self.check(block, (x, y)):
+            success = True
+        elif self.block.size > 2:
+            ycan = [y+1, y-1]
+            if self.block.size == 4:
+                ycan.append(y-2)
+            for yx in ycan:
+                if self.check(block, (x, yx)):
+                    y = yx
+                    success = True
+        
+        if success:
+            self.block.setpos((x, y))
             self.block.block = block
             self.draw()
 
     def check(self, block, pos):
-        print(pos)
         x, y = pos
         size = len(block)
 
@@ -107,6 +136,19 @@ class Tetris:
                         return False
         
         return True
+
+    def game_over(self):
+        self.state = GAME_OVER
+        s = pygame.Surface((self.width, self.height))
+        s.set_alpha(172)
+        s.fill((59, 82, 78))
+        self.screen.blit(s, (self.x, self.y))
+
+        font = pygame.font.SysFont(None, 72)
+        text = font.render("Game Over", True, (197, 227, 236))
+        self.screen.blit(text, (self.x+(self.width-text.get_width())/2, self.y+(self.height-text.get_height())/2))
+
+        pygame.display.flip()
 
     def hit(self):
         for i in range(self.block.size):
@@ -126,9 +168,10 @@ class Tetris:
         for i in range(ROW, ROW_BUFFER):
             for j in range(COL):
                 if self.table[i][j] != 0:
-                    return GAME_OVER
+                    self.game_over()
+                    return None
 
-        state = DROPPED
+        self.state = DROPPED
         self.new_block()
 
 
