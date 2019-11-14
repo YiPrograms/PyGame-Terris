@@ -26,8 +26,10 @@ from block import Block
 class Tetris:
     def __init__(self, size, pos, title, screen):
         self.table = []
+        self.block_list = []
         self.state = NOT_RUNNING
         self.score = 0
+        self.combo = 0
         self.width = size[0]
         self.height = size[1]
         self.x = pos[0]
@@ -41,7 +43,9 @@ class Tetris:
         for i in range(ROW_BUFFER):
             self.table.append(EMPTY_ROW[:])
 
-        self.new_block()
+        self.draw_title()
+        self.add_score(0)
+        self.new_block(True)
         self.draw()
     
     def __del__(self):
@@ -72,11 +76,44 @@ class Tetris:
         pygame.draw.rect(self.screen, (197, 227, 236), pygame.Rect(self.x-2, self.y-2, self.width+4, self.height+4), 4)
 
         pygame.display.flip()
+    
+    def draw_title(self):
+        if self.title is not None:
+            font = pygame.font.SysFont(None, 72)
+            text = font.render(self.title, True, (197, 227, 236))
+            self.screen.blit(text, (self.x+(self.width-text.get_width())/2, self.y-text.get_height()-10))
 
-    def new_block(self):
-        self.block = Block(randint(0, 6), randint(1, len(COLOR)-1))
+    def draw_next(self):
+        if self.title is None:
+            width = self.dcol*4 + 25*2
+            height = self.drow*4*3 + 25*4
+            x = self.x + self.width + 50
+            y = self.y + 50
+            pygame.draw.rect(self.screen, (67, 95, 120), pygame.Rect(self.x+self.width+25, self.y+25, width, height))
+            for k in range(3):
+                offset = 0
+                if self.block_list[k].size == 3:
+                    offset = self.drow /2
+                elif self.block_list[k].size == 2:
+                    offset = self.drow
+                for i in range(self.block_list[k].size):
+                    for j in range(self.block_list[k].size):
+                        if self.block_list[k].block[i][j] != 0:
+                            pygame.draw.rect(self.screen,
+                                    COLOR[self.block_list[k].block[i][j]],
+                                    pygame.Rect(offset + x+self.dcol*j+1, offset + y+self.drow*(self.block_list[k].size-i-1)+1, self.dcol-2, self.drow-2))
+                y += self.drow*4 + 25
+
+    def new_block(self, init):
+        if init:
+            for i in range(3):
+                self.block_list.append(Block(randint(0, 6), randint(1, len(COLOR)-1)))
+        self.block = self.block_list[0]
+        self.block_list.pop(0)
+        self.block_list.append(Block(randint(0, 6), randint(1, len(COLOR)-1)))
         self.block.setpos((ROW_BUFFER-self.block.size, randint(0, COL-1-self.block.size)))
         self.state = FALLING
+        self.draw_next()
         self.draw()
     
     def fall(self):
@@ -150,6 +187,13 @@ class Tetris:
 
         pygame.display.flip()
 
+    def add_score(self, score):
+        if self.title is None:
+            self.score += score * self.combo
+            font = pygame.font.SysFont(None, 72)
+            text = font.render(str(self.score), True, (197, 227, 236))
+            self.screen.blit(text, (self.x+(self.width-text.get_width())/2, self.y-text.get_height()-10))
+    
     def hit(self):
         for i in range(self.block.size):
             for j in range(self.block.size):
@@ -157,12 +201,21 @@ class Tetris:
                     self.table[self.block.x+i][self.block.y+j] = self.block.block[i][j]
         
         i = 0
+        clear = 0
         while i<ROW:
             if 0 not in self.table[i]:
                 self.table.pop(i)
                 self.table.append(EMPTY_ROW[:])
                 i -= 1
+                clear += 1
             i += 1
+        
+        if clear:
+            self.combo += 1
+            self.add_score(clear*200-100)
+        else:
+            self.combo = 0
+
         self.draw()
 
         for i in range(ROW, ROW_BUFFER):
@@ -172,7 +225,7 @@ class Tetris:
                     return None
 
         self.state = DROPPED
-        self.new_block()
+        self.new_block(False)
 
 
 

@@ -25,7 +25,7 @@ def main():
     pygame.time.set_timer(HOLD_EVENT, HOLD_TIME)
     
     def new_game():
-        return Tetris((400, 800), (60, 75), "Player", screen)
+        return Tetris((400, 800), (60, 75), None, screen)
 
     player = new_game()
 
@@ -76,8 +76,7 @@ def main():
                 
                 if event.type == FALL_EVENT:
                     player.fall()
-
-            else:
+            elif player.state == GAME_OVER:
                 if event.type == pygame.KEYDOWN:
                     del player
                     player = new_game()
