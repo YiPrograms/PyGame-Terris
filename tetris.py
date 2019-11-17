@@ -192,6 +192,7 @@ class Tetris:
             self.score += score * self.combo
             font = pygame.font.SysFont(None, 72)
             text = font.render(str(self.score), True, (197, 227, 236))
+            pygame.draw.rect(self.screen, (26, 50, 88), pygame.Rect(self.x, self.y-text.get_height()-10, self.width, text.get_height()))
             self.screen.blit(text, (self.x+(self.width-text.get_width())/2, self.y-text.get_height()-10))
     
     def hit(self):

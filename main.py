@@ -15,7 +15,7 @@ GAME_OVER = 3
 
 
 def main():
-    screen = pygame.display.set_mode((1280, 960))
+    screen = pygame.display.set_mode((750, 960))
     pygame.display.set_caption("Tetris")
     screen.fill((26, 50, 88))
 
@@ -25,7 +25,7 @@ def main():
     pygame.time.set_timer(HOLD_EVENT, HOLD_TIME)
     
     def new_game():
-        return Tetris((400, 800), (60, 75), None, screen)
+        return Tetris((400, 800), (60, 85), None, screen)
 
     player = new_game()
 
